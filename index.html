@@ -1,0 +1,225 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Smart Quantity System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+* {margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+
+
+
+body {
+	
+  height:100vh;
+  background: url("https://images.unsplash.com/photo-1506744038136-46273834b3fb") no-repeat center/cover;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+body::before {
+  content:"";
+  position:absolute;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.5);
+  backdrop-filter: blur(6px);
+}
+
+.container {
+  position:relative;
+  width:420px;
+}
+
+.card {
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(25px);
+  padding:25px;
+  border-radius:20px;
+  box-shadow:0 10px 40px rgba(0,0,0,0.5);
+  color:white;
+  text-align:center;
+}
+
+button {
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  background:linear-gradient(45deg,#ff416c,#ff4b2b);
+  color:white;
+  cursor:pointer;
+  margin-top:10px;
+}
+
+.result {
+  margin-top:15px;
+  font-size:18px;
+  font-weight:bold;
+}
+
+select,input {
+  width:100%;
+  padding:12px;
+  margin:8px 0;
+  border:none;
+  border-radius:12px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <div class="card">
+
+    <h2>⚡ Smart Quantity System</h2>
+
+    <button onclick="logout()">Logout 🚪</button>
+
+    <select id="operation">
+      <option value="add">Add</option>
+      <option value="subtract">Subtract</option>
+      <option value="divide">Divide</option>
+      <option value="compare">Compare</option>
+      <option value="convert">Convert</option>
+    </select>
+
+    <input type="number" id="v1" placeholder="Value 1">
+    <select id="u1">
+      <option>FEET</option>
+      <option>INCH</option>
+      <option>CM</option>
+      <option>METER</option>
+    </select>
+
+    <input type="number" id="v2" placeholder="Value 2">
+    <select id="u2">
+      <option>FEET</option>
+      <option>INCH</option>
+      <option>CM</option>
+      <option>METER</option>
+    </select>
+
+    <button onclick="calculate()">Execute 🚀</button>
+
+    <div class="result" id="result"></div>
+
+  </div>
+</div>
+
+
+<script>
+
+// 🔥 GOOGLE LOGIN TOKEN HANDLE (👉 यही missing था)
+const params = new URLSearchParams(window.location.search);
+const tokenFromUrl = params.get("token");
+
+if(tokenFromUrl){
+  localStorage.setItem("token", tokenFromUrl);
+
+  // URL clean (token हट जाएगा URL से)
+  window.history.replaceState({}, document.title, "index.html");
+}
+
+// 🔥 BASE URL
+const BASE_URL = "http://localhost:8080/api/v1/quantities";
+
+// 🔐 CHECK LOGIN (Google + normal दोनों के लिए)
+if(!localStorage.getItem("token")){
+  alert("Please login first");
+  window.location.href = "auth.html";
+}
+
+// 🚪 LOGOUT
+function logout(){
+  localStorage.removeItem("token");
+  window.location.href = "auth.html";
+}
+
+// 📦 GET INPUT DATA
+function getData(){
+  return {
+    thisQuantityDTO:{
+      value: parseFloat(document.getElementById("v1").value),
+      unit: document.getElementById("u1").value
+    },
+    thatQuantityDTO:{
+      value: parseFloat(document.getElementById("v2").value),
+      unit: document.getElementById("u2").value
+    }
+  };
+}
+
+// 🔗 COMMON API CALL
+async function callAPI(endpoint, data){
+  const response = await fetch(`${BASE_URL}/${endpoint}`,{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":"Bearer " + localStorage.getItem("token")
+    },
+    body: JSON.stringify(data)
+  });
+
+  return await response.json();
+}
+
+// 🚀 MAIN FUNCTION
+async function calculate(){
+
+  const op = document.getElementById("operation").value;
+  const data = getData();
+
+  try{
+
+    let result;
+
+    if(op === "add"){
+      result = await callAPI("add", data);
+      show(`Result: ${result.value} ${result.unit}`);
+    }
+
+    else if(op === "subtract"){
+      result = await callAPI("subtract", data);
+      show(`Result: ${result.value} ${result.unit}`);
+    }
+
+    else if(op === "divide"){
+      result = await callAPI("divide", data);
+      show(`Result: ${result}`);
+    }
+
+    else if(op === "convert"){
+      result = await callAPI("convert", data);
+      show(`Result: ${result.value} ${result.unit}`);
+    }
+
+    else if(op === "compare"){
+      result = await callAPI("compare", data);
+
+      if(result.equal !== undefined){
+        show(result.equal ? "Equal ✅" : "Not Equal ❌");
+      }else{
+        show("Compare done");
+      }
+    }
+
+  }catch(err){
+    console.error(err);
+    show("❌ Error connecting backend");
+  }
+}
+
+// 🖥️ SHOW RESULT
+function show(text){
+  document.getElementById("result").innerText = text;
+}
+
+</script>
+
+</body>
+</html>
