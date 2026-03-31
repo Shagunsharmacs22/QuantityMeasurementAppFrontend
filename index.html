@@ -1,86 +1,41 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Smart Quantity System</title>
+<title>Smart Quantity Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-* {margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
-
-
-
-body {
-	
-  height:100vh;
-  background: url("https://images.unsplash.com/photo-1506744038136-46273834b3fb") no-repeat center/cover;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-}
-
-body::before {
-  content:"";
-  position:absolute;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,0.5);
-  backdrop-filter: blur(6px);
-}
-
-.container {
-  position:relative;
-  width:420px;
-}
-
-.card {
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(25px);
-  padding:25px;
-  border-radius:20px;
-  box-shadow:0 10px 40px rgba(0,0,0,0.5);
-  color:white;
-  text-align:center;
-}
-
-button {
-  width:100%;
-  padding:12px;
-  border:none;
-  border-radius:12px;
-  background:linear-gradient(45deg,#ff416c,#ff4b2b);
-  color:white;
-  cursor:pointer;
-  margin-top:10px;
-}
-
-.result {
-  margin-top:15px;
-  font-size:18px;
-  font-weight:bold;
-}
-
-select,input {
-  width:100%;
-  padding:12px;
-  margin:8px 0;
-  border:none;
-  border-radius:12px;
-}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{height:100vh; display:flex; background:#f5f5f5;}
+.sidebar{width:250px; background:#1b1b2f; color:white; display:flex; flex-direction:column; padding:20px;}
+.sidebar h2{margin-bottom:40px; font-size:20px;}
+.sidebar button{margin-top:auto; padding:10px; border:none; border-radius:8px; background:#ff416c; cursor:pointer; color:white;}
+.sidebar h3{margin-top:20px; font-size:16px; border-bottom:1px solid #555; padding-bottom:5px;}
+.history-item{font-size:14px; margin-top:5px; padding:5px 0; border-bottom:1px solid #444;}
+.main{flex:1; padding:40px; display:flex; flex-direction:column; align-items:center; background:url("https://images.unsplash.com/photo-1506744038136-46273834b3fb") no-repeat center/cover;}
+.content{width:100%; max-width:700px; background:rgba(0,0,0,0.6); padding:30px; border-radius:20px; color:white;}
+select,input{width:100%; padding:12px; margin:10px 0; border-radius:10px; border:none;}
+button.execute{width:100%; padding:12px; margin-top:15px; border:none; border-radius:10px; background:linear-gradient(45deg,#ff416c,#ff4b2b); color:white;}
+.result{margin-top:20px; font-size:18px; font-weight:bold;}
+.history-section{width:100%; max-width:700px; background:rgba(0,0,0,0.6); padding:20px; border-radius:20px; color:white; margin-top:20px; max-height:200px; overflow-y:auto;}
 </style>
 </head>
 
 <body>
 
-<div class="container">
-  <div class="card">
+<div class="sidebar">
+  <h2 id="userWelcome">Welcome 👋 User</h2>
+  <h3>History</h3>
+  <div id="historyList"></div>
+  <button onclick="logout()">Logout 🚪</button>
+</div>
 
+<div class="main">
+  <div class="content">
     <h2>⚡ Smart Quantity System</h2>
 
-    <button onclick="logout()">Logout 🚪</button>
-
-    <select id="operation">
+    <select id="operation" onchange="toggleInputs()">
       <option value="add">Add</option>
       <option value="subtract">Subtract</option>
       <option value="divide">Divide</option>
@@ -91,134 +46,211 @@ select,input {
     <input type="number" id="v1" placeholder="Value 1">
     <select id="u1">
       <option>FEET</option>
-      <option>INCH</option>
-      <option>CM</option>
-      <option>METER</option>
+      <option>INCHES</option>
+      <option>CENTIMETERS</option>
+      <option>YARDS</option>
     </select>
 
     <input type="number" id="v2" placeholder="Value 2">
     <select id="u2">
       <option>FEET</option>
-      <option>INCH</option>
-      <option>CM</option>
-      <option>METER</option>
+      <option>INCHES</option>
+      <option>CENTIMETERS</option>
+      <option>YARDS</option>
     </select>
 
-    <button onclick="calculate()">Execute 🚀</button>
+    <button class="execute" onclick="calculate()">Execute 🚀</button>
 
     <div class="result" id="result"></div>
+  </div>
 
+  <div class="history-section">
+    <h3>Recent Operations</h3>
+    <div id="historyBox"></div>
   </div>
 </div>
 
-
 <script>
+const BASE_URL = "http://localhost:8080/api/v1/quantities";
+const USER_API = "http://localhost:8080/auth/";
 
-// 🔥 GOOGLE LOGIN TOKEN HANDLE (👉 यही missing था)
-const params = new URLSearchParams(window.location.search);
-const tokenFromUrl = params.get("token");
+// 🔥 TOKEN FROM URL
+const urlParams = new URLSearchParams(window.location.search);
+const urlToken = urlParams.get("token");
 
-if(tokenFromUrl){
-  localStorage.setItem("token", tokenFromUrl);
-
-  // URL clean (token हट जाएगा URL से)
+if(urlToken){
+  localStorage.setItem("token", urlToken);
   window.history.replaceState({}, document.title, "index.html");
 }
 
-// 🔥 BASE URL
-const BASE_URL = "http://localhost:8080/api/v1/quantities";
+// 🔐 TOKEN FROM STORAGE
+let token = localStorage.getItem("token");
 
-// 🔐 CHECK LOGIN (Google + normal दोनों के लिए)
-if(!localStorage.getItem("token")){
-  alert("Please login first");
-  window.location.href = "auth.html";
+if(!token){
+  console.warn("Token missing");
+}
+
+// 👤 USER NAME
+let username = localStorage.getItem("username");
+
+if(username){
+  document.getElementById("userWelcome").innerText = "Welcome 👋 " + username;
+}else if(token){
+  fetch(USER_API,{
+    headers:{ ...(token && {"Authorization":"Bearer "+token}) }
+  })
+  .then(res=>res.json())
+  .then(data=>{
+    document.getElementById("userWelcome").innerText="Welcome 👋 "+(data.name || "User");
+    localStorage.setItem("username", data.name);
+  })
+  .catch(()=>{});
 }
 
 // 🚪 LOGOUT
 function logout(){
-  localStorage.removeItem("token");
-  window.location.href = "auth.html";
+  localStorage.clear();
+  window.location.href="auth.html";
 }
 
-// 📦 GET INPUT DATA
-function getData(){
+// 🔄 INPUT TOGGLE
+function toggleInputs(){
+  const op = document.getElementById("operation").value;
+  document.getElementById("v2").style.display = (op==="convert") ? "none" : "block";
+}
+
+// 📦 DATA BUILD
+function getData(op){
+  const v1=parseFloat(document.getElementById("v1").value);
+  const u1=document.getElementById("u1").value;
+  const v2=parseFloat(document.getElementById("v2").value);
+  const u2=document.getElementById("u2").value;
+
+  if(op==="convert"){
+    return {
+      thisQuantityDTO:{ value:v1, unit:u1, measurementType:"LENGTH" },
+      thatQuantityDTO:{ value:1, unit:u2, measurementType:"LENGTH" } // ✅ FIX
+    };
+  }
+
   return {
-    thisQuantityDTO:{
-      value: parseFloat(document.getElementById("v1").value),
-      unit: document.getElementById("u1").value
-    },
-    thatQuantityDTO:{
-      value: parseFloat(document.getElementById("v2").value),
-      unit: document.getElementById("u2").value
-    }
+    thisQuantityDTO:{ value:v1, unit:u1, measurementType:"LENGTH" },
+    thatQuantityDTO:{ value:v2, unit:u2, measurementType:"LENGTH" }
   };
 }
 
-// 🔗 COMMON API CALL
-async function callAPI(endpoint, data){
-  const response = await fetch(`${BASE_URL}/${endpoint}`,{
+// 🌐 API CALL
+async function callAPI(endpoint,data){
+
+  if(!token){
+    alert("Login required ❌");
+    window.location.href="auth.html";
+    return;
+  }
+
+  const res = await fetch(`${BASE_URL}/${endpoint}`,{
     method:"POST",
     headers:{
       "Content-Type":"application/json",
-      "Authorization":"Bearer " + localStorage.getItem("token")
+      ...(token && {"Authorization":"Bearer "+token})
     },
     body: JSON.stringify(data)
   });
 
-  return await response.json();
+  if(res.status===401){
+    logout();
+    return;
+  }
+
+  return await res.json();
 }
 
-// 🚀 MAIN FUNCTION
+// 🚀 CALCULATE
 async function calculate(){
-
   const op = document.getElementById("operation").value;
-  const data = getData();
+  const data = getData(op);
 
   try{
+    let result = await callAPI(op,data);
 
-    let result;
+    let display="";
 
-    if(op === "add"){
-      result = await callAPI("add", data);
-      show(`Result: ${result.value} ${result.unit}`);
+    if(op==="divide"){
+      display = result ?? "0";
     }
-
-    else if(op === "subtract"){
-      result = await callAPI("subtract", data);
-      show(`Result: ${result.value} ${result.unit}`);
-    }
-
-    else if(op === "divide"){
-      result = await callAPI("divide", data);
-      show(`Result: ${result}`);
-    }
-
-    else if(op === "convert"){
-      result = await callAPI("convert", data);
-      show(`Result: ${result.value} ${result.unit}`);
-    }
-
-    else if(op === "compare"){
-      result = await callAPI("compare", data);
-
-      if(result.equal !== undefined){
-        show(result.equal ? "Equal ✅" : "Not Equal ❌");
-      }else{
-        show("Compare done");
-      }
-    }
-
-  }catch(err){
-    console.error(err);
-    show("❌ Error connecting backend");
+    else if(op==="compare"){
+      let res = result.result;
+  if(res === "true" || res ===1){
+    display = "Equal ✅";
+  }else{
+    display =  "Not Equal ❌";
   }
 }
 
-// 🖥️ SHOW RESULT
-function show(text){
-  document.getElementById("result").innerText = text;
+    document.getElementById("result").innerText = display;
+
+    loadHistory();
+
+  }catch(e){
+    console.error(e);
+    document.getElementById("result").innerText="❌ Error";
+  }
 }
 
+// 📜 HISTORY (FULL SAFE VERSION)
+async function loadHistory(){
+
+  if(!token) return;
+
+  try{
+    const res = await fetch(`${BASE_URL}/history`,{
+      headers:{ ...(token && {"Authorization":"Bearer "+token}) }
+    });
+
+    if(res.status===401){
+      logout();
+      return;
+    }
+
+    const data = await res.json();
+    const box = document.getElementById("historyBox");
+    box.innerHTML="";
+
+    data.slice(-10).reverse().forEach(item=>{
+
+      let text = `${item.operation || "OP"} : `;
+
+      // THIS
+      if(item.thisQuantityDTO){
+        text += `${item.thisQuantityDTO.value ?? ""} ${item.thisQuantityDTO.unit ?? ""}`;
+      }
+
+      // THAT
+      if(item.thatQuantityDTO && item.thatQuantityDTO.value !== undefined){
+        text += ` , ${item.thatQuantityDTO.value} ${item.thatQuantityDTO.unit}`;
+      }
+
+      // RESULT (handle all cases)
+      if(item.result !== undefined){
+
+        if(typeof item.result === "object"){
+          text += ` => ${item.result.value ?? ""} ${item.result.unit ?? ""}`;
+        }else{
+          text += ` => ${item.result}`;
+        }
+
+      }
+
+      box.innerHTML += `<div class="history-item">${text}</div>`;
+    });
+
+  }catch(e){
+    console.error(e);
+  }
+}
+
+toggleInputs();
+loadHistory();
 </script>
 
 </body>
