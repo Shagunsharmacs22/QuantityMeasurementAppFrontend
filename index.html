@@ -8,26 +8,49 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
 body{height:100vh; display:flex; background:#f5f5f5;}
+
 .sidebar{width:250px; background:#1b1b2f; color:white; display:flex; flex-direction:column; padding:20px;}
-.sidebar h2{margin-bottom:40px; font-size:20px;}
 .sidebar button{margin-top:auto; padding:10px; border:none; border-radius:8px; background:#ff416c; cursor:pointer; color:white;}
-.sidebar h3{margin-top:20px; font-size:16px; border-bottom:1px solid #555; padding-bottom:5px;}
-.history-item{font-size:14px; margin-top:5px; padding:5px 0; border-bottom:1px solid #444;}
+
 .main{flex:1; padding:40px; display:flex; flex-direction:column; align-items:center; background:url("https://images.unsplash.com/photo-1506744038136-46273834b3fb") no-repeat center/cover;}
+
 .content{width:100%; max-width:700px; background:rgba(0,0,0,0.6); padding:30px; border-radius:20px; color:white;}
+
 select,input{width:100%; padding:12px; margin:10px 0; border-radius:10px; border:none;}
+
 button.execute{width:100%; padding:12px; margin-top:15px; border:none; border-radius:10px; background:linear-gradient(45deg,#ff416c,#ff4b2b); color:white;}
-.result{margin-top:20px; font-size:18px; font-weight:bold;}
-.history-section{width:100%; max-width:700px; background:rgba(0,0,0,0.6); padding:20px; border-radius:20px; color:white; margin-top:20px; max-height:200px; overflow-y:auto;}
+
+.result-box{
+  width:100%;
+  max-width:700px;
+  background:white;
+  color:black;
+  padding:25px;
+  border-radius:20px;
+  margin-top:20px;
+  text-align:center;
+  font-size:22px;
+  font-weight:bold;
+}
+
+.history-section{
+  width:100%;
+  max-width:700px;
+  background:rgba(0,0,0,0.7);
+  padding:20px;
+  border-radius:20px;
+  color:white;
+  margin-top:20px;
+  display:none;
+}
 </style>
 </head>
 
 <body>
 
 <div class="sidebar">
-  <h2 id="userWelcome">Welcome 👋 User</h2>
-  <h3>History</h3>
-  <div id="historyList"></div>
+  <h2>Smart App</h2>
+  <button onclick="toggleHistory()">📜 History</button>
   <button onclick="logout()">Logout 🚪</button>
 </div>
 
@@ -35,36 +58,28 @@ button.execute{width:100%; padding:12px; margin-top:15px; border:none; border-ra
   <div class="content">
     <h2>⚡ Smart Quantity System</h2>
 
-    <select id="operation" onchange="toggleInputs()">
-      <option value="add">Add</option>
-      <option value="subtract">Subtract</option>
-      <option value="divide">Divide</option>
-      <option value="compare">Compare</option>
-      <option value="convert">Convert</option>
+    <!-- Measurement Type -->
+    <select id="measurementType" onchange="updateUnits()">
+      <option value="LENGTH">Length</option>
+      <option value="TEMPERATURE">Temperature</option>
+      <option value="VOLUME">Volume</option>
+      <option value="WEIGHT">Weight</option>
     </select>
+
+    <select id="operation" onchange="toggleInputs()"></select>
 
     <input type="number" id="v1" placeholder="Value 1">
-    <select id="u1">
-      <option>FEET</option>
-      <option>INCHES</option>
-      <option>CENTIMETERS</option>
-      <option>YARDS</option>
-    </select>
+    <select id="u1"></select>
 
     <input type="number" id="v2" placeholder="Value 2">
-    <select id="u2">
-      <option>FEET</option>
-      <option>INCHES</option>
-      <option>CENTIMETERS</option>
-      <option>YARDS</option>
-    </select>
+    <select id="u2"></select>
 
     <button class="execute" onclick="calculate()">Execute 🚀</button>
-
-    <div class="result" id="result"></div>
   </div>
 
-  <div class="history-section">
+  <div class="result-box" id="result">Result will appear here</div>
+
+  <div class="history-section" id="historySection">
     <h3>Recent Operations</h3>
     <div id="historyBox"></div>
   </div>
@@ -72,185 +87,179 @@ button.execute{width:100%; padding:12px; margin-top:15px; border:none; border-ra
 
 <script>
 const BASE_URL = "http://localhost:8080/api/v1/quantities";
-const USER_API = "http://localhost:8080/auth/";
 
-// 🔥 TOKEN FROM URL
-const urlParams = new URLSearchParams(window.location.search);
-const urlToken = urlParams.get("token");
+// 🔥 EXACT BACKEND ENUM MATCH
+const unitMap = {
+  LENGTH:["INCHES","FEET","YARDS","CENTIMETERS"],
+  TEMPERATURE:["CELSIUS","FAHRENHEIT","KELVIN"],
+  VOLUME:["MILLILITRE","LITRE","GALLON"],
+  WEIGHT:["GRAM","KILOGRAM","POUND"]
+};
 
-if(urlToken){
-  localStorage.setItem("token", urlToken);
-  window.history.replaceState({}, document.title, "index.html");
+// 🔄 operations
+function updateOperations(){
+  const type=document.getElementById("measurementType").value;
+  const op=document.getElementById("operation");
+
+  op.innerHTML="";
+
+  if(type==="TEMPERATURE"){
+    op.innerHTML+=`<option value="compare">Compare</option>`;
+    op.innerHTML+=`<option value="convert">Convert</option>`;
+  }else{
+    op.innerHTML+=`<option value="add">Add</option>`;
+    op.innerHTML+=`<option value="subtract">Subtract</option>`;
+    op.innerHTML+=`<option value="divide">Divide</option>`;
+    op.innerHTML+=`<option value="compare">Compare</option>`;
+    op.innerHTML+=`<option value="convert">Convert</option>`;
+  }
+
+  toggleInputs();
 }
 
-// 🔐 TOKEN FROM STORAGE
-let token = localStorage.getItem("token");
+// 🔄 units
+function updateUnits(){
+  const type=document.getElementById("measurementType").value;
+  const u1=document.getElementById("u1");
+  const u2=document.getElementById("u2");
 
-if(!token){
-  console.warn("Token missing");
+  u1.innerHTML="";
+  u2.innerHTML="";
+
+  unitMap[type].forEach(unit=>{
+    u1.innerHTML+=`<option>${unit}</option>`;
+    u2.innerHTML+=`<option>${unit}</option>`;
+  });
+
+  updateOperations();
 }
 
-// 👤 USER NAME
-let username = localStorage.getItem("username");
-
-if(username){
-  document.getElementById("userWelcome").innerText = "Welcome 👋 " + username;
-}else if(token){
-  fetch(USER_API,{
-    headers:{ ...(token && {"Authorization":"Bearer "+token}) }
-  })
-  .then(res=>res.json())
-  .then(data=>{
-    document.getElementById("userWelcome").innerText="Welcome 👋 "+(data.name || "User");
-    localStorage.setItem("username", data.name);
-  })
-  .catch(()=>{});
+// 🔄 input toggle
+function toggleInputs(){
+  const op=document.getElementById("operation").value;
+  document.getElementById("v2").style.display = (op==="convert") ? "none" : "block";
 }
 
-// 🚪 LOGOUT
+// 🔄 history toggle
+function toggleHistory(){
+  const box=document.getElementById("historySection");
+  box.style.display = box.style.display==="none" ? "block" : "none";
+}
+
+// 📦 data (convert SAME WORKING LOGIC)
+function getData(op){
+  const v1=parseFloat(document.getElementById("v1").value);
+  const u1=document.getElementById("u1").value;
+  const u2=document.getElementById("u2").value;
+  const type=document.getElementById("measurementType").value;
+
+  if(op==="convert"){
+  return {
+    thisQuantityDTO:{ value:v1, unit:u1, measurementType:type },
+    thatQuantityDTO:{ value:v1, unit:u2, measurementType:type } // ✅ FIX
+  };
+}
+  const v2=parseFloat(document.getElementById("v2").value);
+
+  return {
+    thisQuantityDTO:{ value:v1, unit:u1, measurementType:type },
+    thatQuantityDTO:{ value:v2, unit:u2, measurementType:type }
+  };
+}
+
+// 🌐 API
+async function callAPI(endpoint,data){
+  const token=localStorage.getItem("token");
+
+  const res=await fetch(`${BASE_URL}/${endpoint}`,{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":"Bearer "+token
+    },
+    body:JSON.stringify(data)
+  });
+
+  return await res.json();
+}
+
+// 🚀 calculate
+async function calculate(){
+  const op = document.getElementById("operation").value;
+  const type = document.getElementById("measurementType").value;
+  const u1 = document.getElementById("u1").value;
+  const u2 = document.getElementById("u2").value;
+  const v1 = parseFloat(document.getElementById("v1").value);
+  let result;
+
+  // 🔥 FRONTEND TEMPERATURE CONVERSION
+  if(type === "TEMPERATURE" && op === "convert"){
+    if(u1 === u2){
+      result = v1; // same unit
+    } else if(u1 === "CELSIUS" && u2 === "FAHRENHEIT"){
+      result = (v1 * 9/5) + 32;
+    } else if(u1 === "CELSIUS" && u2 === "KELVIN"){
+      result = v1 + 273.15;
+    } else if(u1 === "FAHRENHEIT" && u2 === "CELSIUS"){
+      result = (v1 - 32) * 5/9;
+    } else if(u1 === "FAHRENHEIT" && u2 === "KELVIN"){
+      result = (v1 - 32) * 5/9 + 273.15;
+    } else if(u1 === "KELVIN" && u2 === "CELSIUS"){
+      result = v1 - 273.15;
+    } else if(u1 === "KELVIN" && u2 === "FAHRENHEIT"){
+      result = (v1 - 273.15) * 9/5 + 32;
+    }
+    document.getElementById("result").innerText = `${result.toFixed(2)} ${u2}`;
+    return; // ✅ skip backend call
+  }
+
+  // 💻 Other operations → backend call
+  const data = getData(op);
+  try {
+    const apiResult = await callAPI(op, data);
+
+    let display = "";
+    if(op === "compare"){
+      display = (apiResult.result == 1) ? "Equal ✅" : "Not Equal ❌";
+    } else if(op === "divide"){
+      display = apiResult;
+    } else {
+      display = `${apiResult.result ?? apiResult.value ?? ""} ${document.getElementById("u2").value}`;
+    }
+
+    document.getElementById("result").innerText = display;
+  } catch(err){
+    document.getElementById("result").innerText = "Error! Check token or input";
+  }
+
+  loadHistory();
+}
+
+// 📜 history
+async function loadHistory(){
+  const token=localStorage.getItem("token");
+
+  const res=await fetch(`${BASE_URL}/history`,{
+    headers:{ "Authorization":"Bearer "+token }
+  });
+
+  const data=await res.json();
+  const box=document.getElementById("historyBox");
+  box.innerHTML="";
+
+  data.slice(-10).reverse().forEach(item=>{
+    box.innerHTML+=`<div>${item.operation} → ${item.result}</div>`;
+  });
+}
+
+// 🚪 logout
 function logout(){
   localStorage.clear();
   window.location.href="auth.html";
 }
 
-// 🔄 INPUT TOGGLE
-function toggleInputs(){
-  const op = document.getElementById("operation").value;
-  document.getElementById("v2").style.display = (op==="convert") ? "none" : "block";
-}
-
-// 📦 DATA BUILD
-function getData(op){
-  const v1=parseFloat(document.getElementById("v1").value);
-  const u1=document.getElementById("u1").value;
-  const v2=parseFloat(document.getElementById("v2").value);
-  const u2=document.getElementById("u2").value;
-
-  if(op==="convert"){
-    return {
-      thisQuantityDTO:{ value:v1, unit:u1, measurementType:"LENGTH" },
-      thatQuantityDTO:{ value:1, unit:u2, measurementType:"LENGTH" } // ✅ FIX
-    };
-  }
-
-  return {
-    thisQuantityDTO:{ value:v1, unit:u1, measurementType:"LENGTH" },
-    thatQuantityDTO:{ value:v2, unit:u2, measurementType:"LENGTH" }
-  };
-}
-
-// 🌐 API CALL
-async function callAPI(endpoint,data){
-
-  if(!token){
-    alert("Login required ❌");
-    window.location.href="auth.html";
-    return;
-  }
-
-  const res = await fetch(`${BASE_URL}/${endpoint}`,{
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      ...(token && {"Authorization":"Bearer "+token})
-    },
-    body: JSON.stringify(data)
-  });
-
-  if(res.status===401){
-    logout();
-    return;
-  }
-
-  return await res.json();
-}
-
-// 🚀 CALCULATE
-async function calculate(){
-  const op = document.getElementById("operation").value;
-  const data = getData(op);
-
-  try{
-    let result = await callAPI(op,data);
-
-    let display="";
-
-    if(op==="divide"){
-      display = result ?? "0";
-    }
-    else if(op==="compare"){
-      let res = result.result;
-  if(res === "true" || res ===1){
-    display = "Equal ✅";
-  }else{
-    display =  "Not Equal ❌";
-  }
-}
-
-    document.getElementById("result").innerText = display;
-
-    loadHistory();
-
-  }catch(e){
-    console.error(e);
-    document.getElementById("result").innerText="❌ Error";
-  }
-}
-
-// 📜 HISTORY (FULL SAFE VERSION)
-async function loadHistory(){
-
-  if(!token) return;
-
-  try{
-    const res = await fetch(`${BASE_URL}/history`,{
-      headers:{ ...(token && {"Authorization":"Bearer "+token}) }
-    });
-
-    if(res.status===401){
-      logout();
-      return;
-    }
-
-    const data = await res.json();
-    const box = document.getElementById("historyBox");
-    box.innerHTML="";
-
-    data.slice(-10).reverse().forEach(item=>{
-
-      let text = `${item.operation || "OP"} : `;
-
-      // THIS
-      if(item.thisQuantityDTO){
-        text += `${item.thisQuantityDTO.value ?? ""} ${item.thisQuantityDTO.unit ?? ""}`;
-      }
-
-      // THAT
-      if(item.thatQuantityDTO && item.thatQuantityDTO.value !== undefined){
-        text += ` , ${item.thatQuantityDTO.value} ${item.thatQuantityDTO.unit}`;
-      }
-
-      // RESULT (handle all cases)
-      if(item.result !== undefined){
-
-        if(typeof item.result === "object"){
-          text += ` => ${item.result.value ?? ""} ${item.result.unit ?? ""}`;
-        }else{
-          text += ` => ${item.result}`;
-        }
-
-      }
-
-      box.innerHTML += `<div class="history-item">${text}</div>`;
-    });
-
-  }catch(e){
-    console.error(e);
-  }
-}
-
-toggleInputs();
-loadHistory();
+// init
+updateUnits();
 </script>
 
 </body>
