@@ -9,17 +9,79 @@
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
 body{height:100vh; display:flex; background:#f5f5f5;}
 
-.sidebar{width:250px; background:#1b1b2f; color:white; display:flex; flex-direction:column; padding:20px;}
-.sidebar button{margin-top:auto; padding:10px; border:none; border-radius:8px; background:#ff416c; cursor:pointer; color:white;}
+/* Sidebar */
+.sidebar{
+  width:250px; 
+  background:#1b1b2f; 
+  color:white; 
+  display:flex; 
+  flex-direction:column; 
+  padding:20px;
+  position:relative;
+}
+.sidebar button{
+  margin-top:auto; 
+  padding:10px; 
+  border:none; 
+  border-radius:8px; 
+  background:#ff416c; 
+  cursor:pointer; 
+  color:white;
+}
 
-.main{flex:1; padding:40px; display:flex; flex-direction:column; align-items:center; background:url("https://images.unsplash.com/photo-1506744038136-46273834b3fb") no-repeat center/cover;}
+/* Floating history button */
+.history-btn{
+  position:absolute;
+  top:20px;
+  right:-60px;
+  background:#ff416c;
+  color:white;
+  padding:12px;
+  border-radius:50%;
+  border:none;
+  cursor:pointer;
+  font-size:18px;
+  box-shadow:0 4px 8px rgba(0,0,0,0.3);
+}
 
-.content{width:100%; max-width:700px; background:rgba(0,0,0,0.6); padding:30px; border-radius:20px; color:white;}
+/* Main content */
+.main{
+  flex:1; 
+  padding:40px; 
+  display:flex; 
+  flex-direction:column; 
+  align-items:center; 
+  background:url("https://images.unsplash.com/photo-1506744038136-46273834b3fb") no-repeat center/cover;
+}
 
-select,input{width:100%; padding:12px; margin:10px 0; border-radius:10px; border:none;}
+.content{
+  width:100%; 
+  max-width:700px; 
+  background:rgba(0,0,0,0.6); 
+  padding:30px; 
+  border-radius:20px; 
+  color:white;
+}
 
-button.execute{width:100%; padding:12px; margin-top:15px; border:none; border-radius:10px; background:linear-gradient(45deg,#ff416c,#ff4b2b); color:white;}
+select,input{
+  width:100%; 
+  padding:12px; 
+  margin:10px 0; 
+  border-radius:10px; 
+  border:none;
+}
 
+button.execute{
+  width:100%; 
+  padding:12px; 
+  margin-top:15px; 
+  border:none; 
+  border-radius:10px; 
+  background:linear-gradient(45deg,#ff416c,#ff4b2b); 
+  color:white;
+}
+
+/* Result box */
 .result-box{
   width:100%;
   max-width:700px;
@@ -33,15 +95,47 @@ button.execute{width:100%; padding:12px; margin-top:15px; border:none; border-ra
   font-weight:bold;
 }
 
+/* Side history panel */
 .history-section{
-  width:100%;
-  max-width:700px;
-  background:rgba(0,0,0,0.7);
+  position:fixed;
+  top:0;
+  right:-350px;
+  width:320px;
+  height:100%;
+  background:rgba(0,0,0,0.95);
   padding:20px;
-  border-radius:20px;
+  border-radius:20px 0 0 20px;
   color:white;
-  margin-top:20px;
-  display:none;
+  box-shadow: -3px 0 15px rgba(0,0,0,0.5);
+  transition: right 0.3s ease;
+  overflow-y:auto;
+  z-index:1000;
+}
+.history-section.active{
+  right:0;
+}
+#historyBox .history-item{
+  background:rgba(255,255,255,0.1);
+  margin-bottom:12px;
+  padding:12px;
+  border-radius:12px;
+}
+#historyBox .history-item h4{
+  margin-bottom:5px;
+  font-size:16px;
+  color:#ffb3b3;
+}
+#historyBox .history-item p{
+  margin:0;
+  font-size:15px;
+  color:white;
+}
+#historyBox::-webkit-scrollbar{
+  width:6px;
+}
+#historyBox::-webkit-scrollbar-thumb{
+  background:#ff416c;
+  border-radius:3px;
 }
 </style>
 </head>
@@ -50,15 +144,14 @@ button.execute{width:100%; padding:12px; margin-top:15px; border:none; border-ra
 
 <div class="sidebar">
   <h2>Smart App</h2>
-  <button onclick="toggleHistory()">📜 History</button>
   <button onclick="logout()">Logout 🚪</button>
+  <button class="history-btn" onclick="toggleHistory()">📜</button>
 </div>
 
 <div class="main">
   <div class="content">
     <h2>⚡ Smart Quantity System</h2>
 
-    <!-- Measurement Type -->
     <select id="measurementType" onchange="updateUnits()">
       <option value="LENGTH">Length</option>
       <option value="TEMPERATURE">Temperature</option>
@@ -78,17 +171,18 @@ button.execute{width:100%; padding:12px; margin-top:15px; border:none; border-ra
   </div>
 
   <div class="result-box" id="result">Result will appear here</div>
+</div>
 
-  <div class="history-section" id="historySection">
-    <h3>Recent Operations</h3>
-    <div id="historyBox"></div>
-  </div>
+<!-- Side History Panel -->
+<div class="history-section" id="historySection">
+  <h3>📜 Recent Operations</h3>
+  <div id="historyBox"></div>
 </div>
 
 <script>
 const BASE_URL = "http://localhost:8080/api/v1/quantities";
 
-// 🔥 EXACT BACKEND ENUM MATCH
+// ENUMS
 const unitMap = {
   LENGTH:["INCHES","FEET","YARDS","CENTIMETERS"],
   TEMPERATURE:["CELSIUS","FAHRENHEIT","KELVIN"],
@@ -96,11 +190,10 @@ const unitMap = {
   WEIGHT:["GRAM","KILOGRAM","POUND"]
 };
 
-// 🔄 operations
+// operations
 function updateOperations(){
   const type=document.getElementById("measurementType").value;
   const op=document.getElementById("operation");
-
   op.innerHTML="";
 
   if(type==="TEMPERATURE"){
@@ -113,40 +206,35 @@ function updateOperations(){
     op.innerHTML+=`<option value="compare">Compare</option>`;
     op.innerHTML+=`<option value="convert">Convert</option>`;
   }
-
   toggleInputs();
 }
 
-// 🔄 units
+// units
 function updateUnits(){
   const type=document.getElementById("measurementType").value;
   const u1=document.getElementById("u1");
   const u2=document.getElementById("u2");
-
-  u1.innerHTML="";
-  u2.innerHTML="";
-
+  u1.innerHTML=""; u2.innerHTML="";
   unitMap[type].forEach(unit=>{
     u1.innerHTML+=`<option>${unit}</option>`;
     u2.innerHTML+=`<option>${unit}</option>`;
   });
-
   updateOperations();
 }
 
-// 🔄 input toggle
+// input toggle
 function toggleInputs(){
   const op=document.getElementById("operation").value;
   document.getElementById("v2").style.display = (op==="convert") ? "none" : "block";
 }
 
-// 🔄 history toggle
+// history toggle
 function toggleHistory(){
-  const box=document.getElementById("historySection");
-  box.style.display = box.style.display==="none" ? "block" : "none";
+  const box = document.getElementById("historySection");
+  box.classList.toggle("active");
 }
 
-// 📦 data (convert SAME WORKING LOGIC)
+// data
 function getData(op){
   const v1=parseFloat(document.getElementById("v1").value);
   const u1=document.getElementById("u1").value;
@@ -154,23 +242,21 @@ function getData(op){
   const type=document.getElementById("measurementType").value;
 
   if(op==="convert"){
-  return {
-    thisQuantityDTO:{ value:v1, unit:u1, measurementType:type },
-    thatQuantityDTO:{ value:v1, unit:u2, measurementType:type } // ✅ FIX
-  };
-}
+    return {
+      thisQuantityDTO:{ value:v1, unit:u1, measurementType:type },
+      thatQuantityDTO:{ value:v1, unit:u2, measurementType:type }
+    };
+  }
   const v2=parseFloat(document.getElementById("v2").value);
-
   return {
     thisQuantityDTO:{ value:v1, unit:u1, measurementType:type },
     thatQuantityDTO:{ value:v2, unit:u2, measurementType:type }
   };
 }
 
-// 🌐 API
+// API call
 async function callAPI(endpoint,data){
   const token=localStorage.getItem("token");
-
   const res=await fetch(`${BASE_URL}/${endpoint}`,{
     method:"POST",
     headers:{
@@ -179,11 +265,10 @@ async function callAPI(endpoint,data){
     },
     body:JSON.stringify(data)
   });
-
   return await res.json();
 }
 
-// 🚀 calculate
+// calculate
 async function calculate(){
   const op = document.getElementById("operation").value;
   const type = document.getElementById("measurementType").value;
@@ -192,67 +277,58 @@ async function calculate(){
   const v1 = parseFloat(document.getElementById("v1").value);
   let result;
 
-  // 🔥 FRONTEND TEMPERATURE CONVERSION
-  if(type === "TEMPERATURE" && op === "convert"){
-    if(u1 === u2){
-      result = v1; // same unit
-    } else if(u1 === "CELSIUS" && u2 === "FAHRENHEIT"){
-      result = (v1 * 9/5) + 32;
-    } else if(u1 === "CELSIUS" && u2 === "KELVIN"){
-      result = v1 + 273.15;
-    } else if(u1 === "FAHRENHEIT" && u2 === "CELSIUS"){
-      result = (v1 - 32) * 5/9;
-    } else if(u1 === "FAHRENHEIT" && u2 === "KELVIN"){
-      result = (v1 - 32) * 5/9 + 273.15;
-    } else if(u1 === "KELVIN" && u2 === "CELSIUS"){
-      result = v1 - 273.15;
-    } else if(u1 === "KELVIN" && u2 === "FAHRENHEIT"){
-      result = (v1 - 273.15) * 9/5 + 32;
-    }
+  // Temperature frontend conversion
+  if(type==="TEMPERATURE" && op==="convert"){
+    if(u1===u2) result=v1;
+    else if(u1==="CELSIUS" && u2==="FAHRENHEIT") result=(v1*9/5)+32;
+    else if(u1==="CELSIUS" && u2==="KELVIN") result=v1+273.15;
+    else if(u1==="FAHRENHEIT" && u2==="CELSIUS") result=(v1-32)*5/9;
+    else if(u1==="FAHRENHEIT" && u2==="KELVIN") result=(v1-32)*5/9+273.15;
+    else if(u1==="KELVIN" && u2==="CELSIUS") result=v1-273.15;
+    else if(u1==="KELVIN" && u2==="FAHRENHEIT") result=(v1-273.15)*9/5+32;
+
     document.getElementById("result").innerText = `${result.toFixed(2)} ${u2}`;
-    return; // ✅ skip backend call
+    addLocalHistory(op,type,`${result.toFixed(2)} ${u2}`);
+    return;
   }
 
-  // 💻 Other operations → backend call
+  // Other operations backend
   const data = getData(op);
-  try {
-    const apiResult = await callAPI(op, data);
-
-    let display = "";
-    if(op === "compare"){
-      display = (apiResult.result == 1) ? "Equal ✅" : "Not Equal ❌";
-    } else if(op === "divide"){
-      display = apiResult;
-    } else {
-      display = `${apiResult.result ?? apiResult.value ?? ""} ${document.getElementById("u2").value}`;
-    }
-
-    document.getElementById("result").innerText = display;
-  } catch(err){
-    document.getElementById("result").innerText = "Error! Check token or input";
+  try{
+    const apiResult = await callAPI(op,data);
+    let display="";
+    if(op==="compare") display=(apiResult.result==1)?"Equal ✅":"Not Equal ❌";
+    else if(op==="divide") display=apiResult;
+    else display=`${apiResult.result??apiResult.value??""} ${u2}`;
+    document.getElementById("result").innerText=display;
+    addLocalHistory(op,type,display);
+  }catch(err){
+    document.getElementById("result").innerText="Error! Check token or input";
   }
-
-  loadHistory();
 }
 
-// 📜 history
-async function loadHistory(){
-  const token=localStorage.getItem("token");
+// add local history (only result)
+function addLocalHistory(op,type,result){
+  const localData = JSON.parse(localStorage.getItem("localHistory") || "[]");
+  localData.push({operation:op, measurementType:type, result:result});
+  localStorage.setItem("localHistory", JSON.stringify(localData));
+  displayHistory(localData);
+}
 
-  const res=await fetch(`${BASE_URL}/history`,{
-    headers:{ "Authorization":"Bearer "+token }
-  });
-
-  const data=await res.json();
+// display history
+function displayHistory(data){
   const box=document.getElementById("historyBox");
   box.innerHTML="";
-
-  data.slice(-10).reverse().forEach(item=>{
-    box.innerHTML+=`<div>${item.operation} → ${item.result}</div>`;
+  const combined = data.slice(-10).reverse();
+  combined.forEach(item=>{
+    box.innerHTML+=`<div class="history-item">
+      <h4>${item.operation} | ${item.measurementType}</h4>
+      <p>Result: ${item.result}</p>
+    </div>`;
   });
 }
 
-// 🚪 logout
+// logout
 function logout(){
   localStorage.clear();
   window.location.href="auth.html";
