@@ -50,11 +50,11 @@ export class DashboardComponent implements OnInit {
     private quantityService: QuantityService
   ) {}
 
-  ngOnInit() {
-    this.updateUnits();
-    const saved = localStorage.getItem('localHistory');
-    if (saved) this.history = JSON.parse(saved);
-  }
+  // ngOnInit() {
+  //   this.updateUnits();
+  //   const saved = localStorage.getItem('localHistory');
+  //   if (saved) this.history = JSON.parse(saved);
+  // }
 
   updateUnits() {
     this.units = this.unitMap[this.selectedType];
@@ -127,6 +127,7 @@ export class DashboardComponent implements OnInit {
       this.addHistory(op, type, this.resultText);
       return;
     }
+    
 
     const data = this.buildPayload();
 
@@ -162,4 +163,19 @@ export class DashboardComponent implements OnInit {
   get recentHistory(): HistoryItem[] {
     return this.history.slice(-10).reverse();
   }
+  userInfo: { name: string; email: string } | null = null;
+
+ngOnInit() {
+  this.updateUnits();
+  const saved = localStorage.getItem('localHistory');
+  if (saved) this.history = JSON.parse(saved);
+  
+  // ⬇️ yeh line add karo
+  this.userInfo = this.authService.getUserInfo();
+}
+get userName(): string {
+  const email = this.userInfo?.email || '';
+  return email.split('@')[0];
+}
+  
 }

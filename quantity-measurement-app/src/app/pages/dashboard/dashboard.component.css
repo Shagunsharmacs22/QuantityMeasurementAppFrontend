@@ -114,5 +114,38 @@ button.execute {
   font-size: 16px;
   color: #ffb3b3;
 }
+.user-name {
+  color: rgba(255,255,255,0.85);
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 4px;
+}
+.user-info {
+  display: flex;
+  flex-direction: column;  /* ⬅️ side by side ki jagah upar neeche */
+  /* align-items: center; */
+  gap: 4px;
+  margin: 6px 0 10px;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+  color: #6c63ff;
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.user-name {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
 
 .history-item p { margin: 0; font-size: 15px; color: white; }

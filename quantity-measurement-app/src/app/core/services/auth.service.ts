@@ -33,4 +33,14 @@ export class AuthService {
   isLoggedIn(): boolean {
     return !!localStorage.getItem('token');
   }
+  getUserInfo(): { name: string; email: string } | null {
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return { name: payload.name || payload.sub || '', email: payload.email || '' };
+  } catch {
+    return null;
+  }
+}
 }
