@@ -1,6 +1,5 @@
 <div style="height:100vh; display:flex; background:#f5f5f5;">
 
-  <!-- Sidebar -->
   <div class="sidebar">
     <h2>Smart App</h2>
     <button class="logout-btn" (click)="logout()">Logout 🚪</button>
@@ -13,35 +12,46 @@
       <h2>⚡ Smart Quantity System</h2>
 
       <!-- Measurement Type -->
-      <select [(ngModel)]="selectedType" (change)="updateUnits()">
+        <select [(ngModel)]="selectedType" (change)="updateUnits()">
         <option *ngFor="let t of measurementTypes" [value]="t">{{ t | titlecase }}</option>
       </select>
 
       <!-- Operation -->
-      <select [(ngModel)]="selectedOperation" (change)="updateUnits()">
-        <option *ngFor="let op of operations" [value]="op">{{ op | titlecase }}</option>
+      <select [(ngModel)]="selectedOperation">
+        <option *ngFor="let op of operations" [value]="op">
+          {{ op }}
+        </option>
       </select>
 
-      <!-- Value 1 -->
-      <input type="number" [(ngModel)]="v1" placeholder="Value 1">
-      <select [(ngModel)]="u1">
-        <option *ngFor="let u of units" [value]="u">{{ u }}</option>
-      </select>
-
-      <!-- Value 2 (hidden for convert) -->
-      <ng-container *ngIf="showV2">
-        <input type="number" [(ngModel)]="v2" placeholder="Value 2">
+    <!-- CONVERT MODE: sirf 1 value + from + to -->
+      <ng-container *ngIf="!showV2">
+        <input type="number" [(ngModel)]="v1" placeholder="Enter Value">
+        <select [(ngModel)]="u1">
+          <option *ngFor="let u of units" [value]="u">{{ u }} (from)</option>
+        </select>
+        <select [(ngModel)]="u2">
+          <option *ngFor="let u of units" [value]="u">{{ u }} (to)</option>
+        </select>
       </ng-container>
-      <select [(ngModel)]="u2">
-        <option *ngFor="let u of units" [value]="u">{{ u }}</option>
-      </select>
-
+ 
+      <!-- NORMAL MODE: 2 values + 2 units -->
+      <ng-container *ngIf="showV2">
+        <input type="number" [(ngModel)]="v1" placeholder="Value 1">
+        <select [(ngModel)]="u1">
+          <option *ngFor="let u of units" [value]="u">{{ u }}</option>
+        </select>
+        <input type="number" [(ngModel)]="v2" placeholder="Value 2">
+        <select [(ngModel)]="u2">
+          <option *ngFor="let u of units" [value]="u">{{ u }}</option>
+        </select>
+      </ng-container>
+ 
       <button class="execute" (click)="calculate()">Execute 🚀</button>
     </div>
-
+ 
     <div class="result-box">{{ resultText }}</div>
   </div>
-
+ 
   <!-- History Panel -->
   <div class="history-section" [class.active]="historyOpen">
     <h3>📜 Recent Operations</h3>
@@ -53,5 +63,6 @@
       <p *ngIf="recentHistory.length === 0" style="color:gray; font-size:14px;">No history yet.</p>
     </div>
   </div>
-
+ 
 </div>
+ 
