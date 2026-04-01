@@ -1,0 +1,31 @@
+<body>
+  <div class="container" [class.active]="isActive" id="container">
+
+    <!-- LOGIN -->
+    <div class="form login">
+      <h2>Welcome Back 👋</h2>
+      <input type="email" [(ngModel)]="loginData.email" placeholder="Email">
+      <input type="password" [(ngModel)]="loginData.password" placeholder="Password">
+      <button (click)="login()">Login</button>
+      <button class="google-btn" (click)="googleLogin()">Login with Google</button>
+      <div class="switch-text">
+        Don't have an account? <span (click)="toggle()">Sign up</span>
+      </div>
+    </div>
+
+    <!-- SIGNUP -->
+    <div class="form signup">
+      <h2>Create Account 🚀</h2>
+      <input type="text" [(ngModel)]="signupData.name" placeholder="Full Name">
+      <input type="email" [(ngModel)]="signupData.email" placeholder="Email">
+      <input type="password" [(ngModel)]="signupData.password" placeholder="Password">
+      <input type="password" [(ngModel)]="signupData.confirm" placeholder="Confirm Password">
+      <button (click)="signup()">Sign Up</button>
+      <div class="switch-text">
+        Already have an account? <span (click)="toggle()">Login</span>
+      </div>
+    </div>
+
+    <div class="panel"></div>
+  </div>
+</body>
