@@ -20,6 +20,7 @@ export class AuthComponent implements OnInit {
   constructor(private authService: AuthService, private router: Router) {}
 
   ngOnInit() {
+    if (typeof window === 'undefined') return;
     // Handle Google OAuth redirect with ?token=
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');

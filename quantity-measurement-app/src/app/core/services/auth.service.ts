@@ -22,8 +22,9 @@ export class AuthService {
   }
 
   saveToken(token: string) {
+  if (typeof window !== 'undefined')
     localStorage.setItem('token', token);
-  }
+}
 
   logout() {
     localStorage.clear();
@@ -31,9 +32,11 @@ export class AuthService {
   }
 
   isLoggedIn(): boolean {
+    if (typeof window === 'undefined') return false;
     return !!localStorage.getItem('token');
   }
   getUserInfo(): { name: string; email: string } | null {
+      if (typeof window === 'undefined') return null;
   const token = localStorage.getItem('token');
   if (!token) return null;
   try {
