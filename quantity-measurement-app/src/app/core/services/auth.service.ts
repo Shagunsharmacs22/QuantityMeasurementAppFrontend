@@ -18,7 +18,7 @@ export class AuthService {
   }
 
   googleLogin() {
-    window.location.href = `${this.base}/google`;
+    window.location.href = `https://quantitymeasurementapp-production-8ff8.up.railway.app/oauth2/authorization/google`;
   }
 
   saveToken(token: string) {
