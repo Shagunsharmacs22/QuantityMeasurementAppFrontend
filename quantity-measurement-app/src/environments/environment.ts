@@ -1,5 +1,5 @@
 export const environment = {
   production: false,
-  authUrl: 'http://localhost:8080/auth',
-  apiUrl: 'http://localhost:8080/api/v1/quantities'
+  authUrl: 'https://quantitymeasurementapp-production-8ff8.up.railway.app',
+  apiUrl: 'https://quantitymeasurementapp-production-8ff8.up.railway.app/api/v1/quantities'
 };
