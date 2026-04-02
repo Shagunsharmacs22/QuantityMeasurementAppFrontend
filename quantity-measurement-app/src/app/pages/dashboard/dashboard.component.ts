@@ -149,7 +149,7 @@ export class DashboardComponent implements OnInit {
           display = String(apiResult);
         } else {
           const val = apiResult.result ?? apiResult.value ?? '';
-          display = `${val} ${this.u2}`;
+          display = `${val} ${op === 'convert' ? this.u2 : this.u1}`;
         }
         this.resultText = display;
         this.addHistory(op, type, display);
